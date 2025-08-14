@@ -23,9 +23,6 @@ export default {
 			to,
 			action.data.fromAfter
 		);
-		if (action.data.fromIndex < action.data.toIndex) {
-			action.data.toIndex++;
-		}
 		const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
 		this._rebindColumn(action.component, newColumn);
 	},

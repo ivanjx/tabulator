@@ -35,7 +35,7 @@ export default class History extends Module{
 			this.subscribe("row-move", this.rowMoved.bind(this));
 			this.subscribe("column-add2", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
-			this.subscribe("column-move", this.columnMoved.bind(this));
+			// this.subscribe("column-move", this.columnMoved.bind(this));
 			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 

@@ -12970,9 +12970,6 @@ var defaultUndoers = {
 			to,
 			action.data.fromAfter
 		);
-		if (action.data.fromIndex < action.data.toIndex) {
-			action.data.toIndex++;
-		}
 		const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
 		this._rebindColumn(action.component, newColumn);
 	},
@@ -13040,9 +13037,6 @@ var defaultRedoers = {
 			to,
 			action.data.toAfter
 		);
-		if (action.data.fromIndex > action.data.toIndex) {
-			action.data.toIndex--;
-		}
 		const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
 		this._rebindColumn(action.component, newColumn);
 	},
@@ -13151,7 +13145,7 @@ class History extends Module{
 			this.subscribe("row-move", this.rowMoved.bind(this));
 			this.subscribe("column-add2", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
-			this.subscribe("column-move", this.columnMoved.bind(this));
+			// this.subscribe("column-move", this.columnMoved.bind(this));
 			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 
@@ -24898,14 +24892,12 @@ class ColumnManager extends CoreFeature {
 	}
 	
 	moveColumnSilent(from, to, after){
-		// Move the DOM elements first (same as moveColumn)
 		to.element.parentNode.insertBefore(from.element, to.element);
 		
 		if(after){
 			to.element.parentNode.insertBefore(to.element, from.element);
 		}
 		
-		// Move in the internal arrays
 		if(from.parent.isGroup){
 			this._moveColumnInArray(from.parent.columns, from, to, after);
 		}else {
