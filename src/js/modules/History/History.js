@@ -32,6 +32,9 @@ export default class History extends Module{
 			this.subscribe("rows-wipe", this.clear.bind(this));
 			this.subscribe("row-added", this.rowAdded.bind(this));
 			this.subscribe("row-move", this.rowMoved.bind(this));
+			this.subscribe("column-add", this.columnAdded.bind(this));
+			this.subscribe("column-delete", this.columnDeleted.bind(this));
+			this.subscribe("column-move", this.columnMoved.bind(this));
 		}
 
 		this.registerTableFunction("undo", this.undo.bind(this));
@@ -39,6 +42,26 @@ export default class History extends Module{
 		this.registerTableFunction("getHistoryUndoSize", this.getHistoryUndoSize.bind(this));
 		this.registerTableFunction("getHistoryRedoSize", this.getHistoryRedoSize.bind(this));
 		this.registerTableFunction("clearHistory", this.clear.bind(this));
+	}
+
+	columnAdded(definition, before, nextToColumn) {
+		this.action("columnAdd", definition, {definition, before, nextToColumn});
+	}
+
+	columnDeleted(column) {
+		// Save enough info to restore column
+		const definition = column.getDefinition ? column.getDefinition() : column.definition;
+		const field = definition && definition.field;
+		this.action("columnDelete", column, {definition, field});
+	}
+
+	columnMoved(from, to, after) {
+		// Save positions for undo/redo
+		this.action("columnMove", from, {
+			from: from,
+			to: to,
+			after: after
+		});
 	}
 
 	rowMoved(from, to, after){
