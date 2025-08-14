@@ -35,6 +35,7 @@ export default class History extends Module{
 			this.subscribe("column-add", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
 			this.subscribe("column-move", this.columnMoved.bind(this));
+			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 
 		this.registerTableFunction("undo", this.undo.bind(this));
@@ -62,6 +63,10 @@ export default class History extends Module{
 			to: to,
 			after: after
 		});
+	}
+
+	columnTitleChanged(column, newTitle, oldTitle) {
+		this.action("columnTitleEdit", column, {oldTitle: oldTitle, newTitle: newTitle});
 	}
 
 	rowMoved(from, to, after){

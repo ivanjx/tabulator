@@ -22,6 +22,14 @@ export default {
 		action.component.cellRendered();
 	},
 
+	columnTitleEdit: function(action){
+		// Update the definition directly
+		action.component.definition.title = action.data.newTitle;
+		
+		// Trigger a re-initialization to update the display
+		action.component._initialize();
+	},
+
 	rowAdd: function(action){
 		var newRow = this.table.rowManager.addRowActual(action.data.data, action.data.pos, action.data.index);
 
