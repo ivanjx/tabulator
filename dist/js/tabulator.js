@@ -3199,6 +3199,8 @@
 		}
 		
 		moveColumnActual(from, to, after){
+			this.dispatch("column-move", from, to);
+
 			if(from.parent.isGroup){
 				this._moveColumnInArray(from.parent.columns, from, to, after);
 			}else {
@@ -3214,6 +3216,26 @@
 			if(this.subscribedExternal("columnMoved")){
 				this.dispatchExternal("columnMoved", from.getComponent(), this.table.columnManager.getComponents());
 			}
+		}
+		
+		moveColumnSilent(from, to, after){
+			// Move the DOM elements first (same as moveColumn)
+			to.element.parentNode.insertBefore(from.element, to.element);
+			
+			if(after){
+				to.element.parentNode.insertBefore(to.element, from.element);
+			}
+			
+			// Move in the internal arrays
+			if(from.parent.isGroup){
+				this._moveColumnInArray(from.parent.columns, from, to, after);
+			}else {
+				this._moveColumnInArray(this.columns, from, to, after);
+			}
+			
+			this._moveColumnInArray(this.columnsByIndex, from, to, after, true);
+			this.verticalAlignHeaders();
+			this.table.rowManager.reinitialize();
 		}
 		
 		_moveColumnInArray(columns, from, to, after, updateRows){
@@ -19298,7 +19320,17 @@
 		},
 
 		columnMove: function(action){
-			
+			const to = this.table.columnManager.getColumnByIndex(action.data.fromIndex);
+			this.table.columnManager.moveColumnSilent(
+				action.component,
+				to,
+				action.data.fromAfter
+			);
+			if (action.data.fromIndex < action.data.toIndex) {
+				action.data.toIndex++;
+			}
+			const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
+			this._rebindColumn(action.component, newColumn);
 		},
 
 		columnTitleEdit: function(action){
@@ -19358,7 +19390,17 @@
 		},
 
 		columnMove: function(action){
-			
+			const to = this.table.columnManager.getColumnByIndex(action.data.toIndex);
+			this.table.columnManager.moveColumnSilent(
+				action.component,
+				to,
+				action.data.toAfter
+			);
+			if (action.data.fromIndex > action.data.toIndex) {
+				action.data.toIndex--;
+			}
+			const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
+			this._rebindColumn(action.component, newColumn);
 		},
 
 		columnTitleEdit: function(action){
@@ -19465,7 +19507,7 @@
 				this.subscribe("row-move", this.rowMoved.bind(this));
 				this.subscribe("column-add2", this.columnAdded.bind(this));
 				this.subscribe("column-delete", this.columnDeleted.bind(this));
-				this.subscribe("column-moved", this.columnMoved.bind(this));
+				this.subscribe("column-move", this.columnMoved.bind(this));
 				this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 			}
 
@@ -19481,18 +19523,19 @@
 		}
 
 		columnDeleted(column) {
-			// Save enough info to restore column
 			const definition = column.getDefinition ? column.getDefinition() : column.definition;
 			const field = definition && definition.field;
 			this.action("columnDelete", column, {definition, field});
 		}
 
-		columnMoved(from, to, after) {
-			// Save positions for undo/redo
+		columnMoved(from, to) {
+			const isFromLast = !from.nextColumn();
+			const isToFirst = !to.prevColumn();
 			this.action("columnMove", from, {
-				from: from,
-				to: to,
-				after: after
+				fromIndex: this.table.columnManager.findColumnIndex(from),
+				toIndex: this.table.columnManager.findColumnIndex(to),
+				fromAfter: isFromLast,
+				toAfter: isToFirst
 			});
 		}
 

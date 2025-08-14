@@ -17,7 +17,17 @@ export default {
 	},
 
 	columnMove: function(action){
-		
+		const to = this.table.columnManager.getColumnByIndex(action.data.toIndex);
+		this.table.columnManager.moveColumnSilent(
+			action.component,
+			to,
+			action.data.toAfter
+		);
+		if (action.data.fromIndex > action.data.toIndex) {
+			action.data.toIndex--;
+		}
+		const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
+		this._rebindColumn(action.component, newColumn);
 	},
 
 	columnTitleEdit: function(action){

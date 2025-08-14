@@ -536,6 +536,8 @@ export default class ColumnManager extends CoreFeature {
 	}
 	
 	moveColumnActual(from, to, after){
+		this.dispatch("column-move", from, to);
+
 		if(from.parent.isGroup){
 			this._moveColumnInArray(from.parent.columns, from, to, after);
 		}else{
@@ -551,6 +553,24 @@ export default class ColumnManager extends CoreFeature {
 		if(this.subscribedExternal("columnMoved")){
 			this.dispatchExternal("columnMoved", from.getComponent(), this.table.columnManager.getComponents());
 		}
+	}
+	
+	moveColumnSilent(from, to, after){
+		to.element.parentNode.insertBefore(from.element, to.element);
+		
+		if(after){
+			to.element.parentNode.insertBefore(to.element, from.element);
+		}
+		
+		if(from.parent.isGroup){
+			this._moveColumnInArray(from.parent.columns, from, to, after);
+		}else{
+			this._moveColumnInArray(this.columns, from, to, after);
+		}
+		
+		this._moveColumnInArray(this.columnsByIndex, from, to, after, true);
+		this.verticalAlignHeaders();
+		this.table.rowManager.reinitialize();
 	}
 	
 	_moveColumnInArray(columns, from, to, after, updateRows){

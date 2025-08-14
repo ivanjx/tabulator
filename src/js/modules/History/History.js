@@ -35,7 +35,7 @@ export default class History extends Module{
 			this.subscribe("row-move", this.rowMoved.bind(this));
 			this.subscribe("column-add2", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
-			this.subscribe("column-moved", this.columnMoved.bind(this));
+			this.subscribe("column-move", this.columnMoved.bind(this));
 			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 
@@ -51,18 +51,19 @@ export default class History extends Module{
 	}
 
 	columnDeleted(column) {
-		// Save enough info to restore column
 		const definition = column.getDefinition ? column.getDefinition() : column.definition;
 		const field = definition && definition.field;
 		this.action("columnDelete", column, {definition, field});
 	}
 
-	columnMoved(from, to, after) {
-		// Save positions for undo/redo
+	columnMoved(from, to) {
+		const isFromLast = !from.nextColumn();
+		const isToFirst = !to.prevColumn();
 		this.action("columnMove", from, {
-			from: from,
-			to: to,
-			after: after
+			fromIndex: this.table.columnManager.findColumnIndex(from),
+			toIndex: this.table.columnManager.findColumnIndex(to),
+			fromAfter: isFromLast,
+			toAfter: isToFirst
 		});
 	}
 
