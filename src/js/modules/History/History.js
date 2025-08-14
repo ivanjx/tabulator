@@ -42,6 +42,7 @@ export default class History extends Module{
 		this.registerTableFunction("getHistoryUndoSize", this.getHistoryUndoSize.bind(this));
 		this.registerTableFunction("getHistoryRedoSize", this.getHistoryRedoSize.bind(this));
 		this.registerTableFunction("clearHistory", this.clear.bind(this));
+		this.registerTableFunction("popHistory", this.pop.bind(this));
 	}
 
 	columnAdded(definition, before, nextToColumn) {
@@ -96,6 +97,13 @@ export default class History extends Module{
 
 	cellUpdated(cell){
 		this.action("cellEdit", cell, {oldValue:cell.oldValue, newValue:cell.value});
+	}
+
+	pop() {
+		if(this.history.length > 0){
+			this.history.pop();
+			this.index = this.history.length - 1;
+		}
 	}
 
 	clear(){
