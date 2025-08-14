@@ -12934,6 +12934,56 @@ class GroupRows extends Module{
 }
 
 var defaultUndoers = {
+	columnAdd: function(action){
+		// Check for previous columnDelete with same field (title change)
+		const history = this.history;
+		const idx = this.index;
+		if (idx > 0) {
+			const prev = history[idx - 1];
+			if (prev && prev.type === "columnDelete" && prev.data.field === action.data.definition.field) {
+				// Undo title change: revert to previous title
+				const col = action.component.table.columnManager.getColumnByField(action.data.definition.field);
+				if (col) {
+					col.definition.title = prev.data.definition.title;
+					col._initialize();
+				}
+				return;
+			}
+		}
+		// Otherwise, undo column add by removing the column
+		if(action.component && action.component.table && action.data.definition){
+			action.component.table.columnManager.deleteColumn(action.data.definition.field);
+		}
+	},
+
+	columnDelete: function(action){
+		// Check for next columnAdd with same field (title change)
+		const history = this.history;
+		const idx = this.index;
+		if (idx < history.length - 1) {
+			const next = history[idx + 1];
+			if (next && next.type === "columnAdd" && next.data.definition.field === action.data.field) {
+				// Undo title change: revert to previous title
+				const col = action.component.table.columnManager.getColumnByField(action.data.field);
+				if (col) {
+					col.definition.title = action.data.definition.title;
+					col._initialize();
+				}
+				return;
+			}
+		}
+		// Otherwise, undo column delete by re-adding the column
+		if(action.component && action.component.table && action.data.definition){
+			action.component.table.columnManager.addColumn(action.data.definition);
+		}
+	},
+
+	columnMove: function(action){
+		// Undo column move by moving back to original position
+		if(action.component && action.component.table){
+			action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, !action.data.after);
+		}
+	},
 	cellEdit: function(action){
 		action.component.setValueProcessData(action.data.oldValue);
 		action.component.cellRendered();
@@ -12968,6 +13018,56 @@ var defaultUndoers = {
 };
 
 var defaultRedoers = {
+	columnAdd: function(action){
+		// Check for previous columnDelete with same field (title change)
+		const history = this.history;
+		const idx = this.index;
+		if (idx > 0) {
+			const prev = history[idx - 1];
+			if (prev && prev.type === "columnDelete" && prev.data.field === action.data.definition.field) {
+				// Redo title change: set to new title
+				const col = action.component.table.columnManager.getColumnByField(action.data.definition.field);
+				if (col) {
+					col.definition.title = action.data.definition.title;
+					col._initialize();
+				}
+				return;
+			}
+		}
+		// Otherwise, redo column add by adding the column again
+		if(action.component && action.component.table && action.data.definition){
+			action.component.table.columnManager.addColumn(action.data.definition);
+		}
+	},
+
+	columnDelete: function(action){
+		// Check for next columnAdd with same field (title change)
+		const history = this.history;
+		const idx = this.index;
+		if (idx < history.length - 1) {
+			const next = history[idx + 1];
+			if (next && next.type === "columnAdd" && next.data.definition.field === action.data.field) {
+				// Redo title change: set to new title
+				const col = action.component.table.columnManager.getColumnByField(action.data.field);
+				if (col) {
+					col.definition.title = next.data.definition.title;
+					col._initialize();
+				}
+				return;
+			}
+		}
+		// Otherwise, redo column delete by removing the column again
+		if(action.component && action.component.table && action.data.definition){
+			action.component.table.columnManager.deleteColumn(action.data.definition.field);
+		}
+	},
+
+	columnMove: function(action){
+		// Redo column move by moving to new position
+		if(action.component && action.component.table){
+			action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, action.data.after);
+		}
+	},
 	cellEdit: function(action){
 		action.component.setValueProcessData(action.data.newValue);
 		action.component.cellRendered();
@@ -13065,6 +13165,9 @@ class History extends Module{
 			this.subscribe("rows-wipe", this.clear.bind(this));
 			this.subscribe("row-added", this.rowAdded.bind(this));
 			this.subscribe("row-move", this.rowMoved.bind(this));
+			this.subscribe("column-add", this.columnAdded.bind(this));
+			this.subscribe("column-delete", this.columnDeleted.bind(this));
+			this.subscribe("column-move", this.columnMoved.bind(this));
 		}
 
 		this.registerTableFunction("undo", this.undo.bind(this));
@@ -13072,6 +13175,26 @@ class History extends Module{
 		this.registerTableFunction("getHistoryUndoSize", this.getHistoryUndoSize.bind(this));
 		this.registerTableFunction("getHistoryRedoSize", this.getHistoryRedoSize.bind(this));
 		this.registerTableFunction("clearHistory", this.clear.bind(this));
+	}
+
+	columnAdded(definition, before, nextToColumn) {
+		this.action("columnAdd", definition, {definition, before, nextToColumn});
+	}
+
+	columnDeleted(column) {
+		// Save enough info to restore column
+		const definition = column.getDefinition ? column.getDefinition() : column.definition;
+		const field = definition && definition.field;
+		this.action("columnDelete", column, {definition, field});
+	}
+
+	columnMoved(from, to, after) {
+		// Save positions for undo/redo
+		this.action("columnMove", from, {
+			from: from,
+			to: to,
+			after: after
+		});
 	}
 
 	rowMoved(from, to, after){
@@ -17841,7 +17964,7 @@ class ReactiveData extends Module{
 					enumerable: true,
 					configurable:true,
 					writable:true,
-					value: this.origFuncs.key,
+					value: this.origFuncs[key],
 				});
 			}
 		}
@@ -18629,7 +18752,7 @@ class ResizeTable extends Module{
 	
 	initializeVisibilityObserver(){
 		this.visibilityObserver = new IntersectionObserver((entries) => {
-			this.visible = entries[0].isIntersecting;
+			this.visible = entries[entries.length - 1].isIntersecting;
 			
 			if(!this.initialized){
 				this.initialized = true;
@@ -19751,8 +19874,8 @@ class Range extends CoreFeature{
 		this.right = 0;
 		
 		this.table = table;
-		this.start = {row:0, col:0};
-		this.end = {row:0, col:0};
+		this.start = {row:undefined, col:undefined};
+		this.end = {row:undefined, col:undefined};
 
 		if(this.rangeManager.rowHeader){
 			this.left = 1;
@@ -20683,13 +20806,15 @@ class SelectRange extends Module {
 	///////////////////////////////////
 	
 	keyNavigate(dir, e){
-		if(this.navigate(false, false, dir));
-		e.preventDefault();
+		if(this.navigate(false, false, dir)){
+			e.preventDefault();
+		}
 	}
 	
 	keyNavigateRange(e, dir, jump, expand){
-		if(this.navigate(jump, expand, dir));
-		e.preventDefault();
+		if(this.navigate(jump, expand, dir)){
+			e.preventDefault();
+		}
 	}
 	
 	navigate(jump, expand, dir) {
@@ -20807,9 +20932,8 @@ class SelectRange extends Module {
 			}
 
 			this.layoutElement();
-			
-			return true;
 		}
+		return true;
 	}
 	
 	rangeRemoved(removed){
@@ -20823,7 +20947,7 @@ class SelectRange extends Module {
 			}
 		}
 		
-		this.layoutElement();
+		this.layoutElement(true);
 	}
 	
 	findJumpRow(column, rows, reverse, emptyStart, emptySide){
@@ -20965,11 +21089,11 @@ class SelectRange extends Module {
 		}
 		
 		if (event.shiftKey) {
-			this.activeRange.setBounds(false, element);
+			this.activeRange.setBounds(false, element, true);
 		} else if (event.ctrlKey) {
-			this.addRange().setBounds(element);
+			this.addRange().setBounds(element, undefined, true);
 		} else {
-			this.resetRanges().setBounds(element);
+			this.resetRanges().setBounds(element, undefined, true);
 		}
 	}
 	
@@ -26791,10 +26915,14 @@ class RowManager extends CoreFeature{
 			//check if the table has changed size when dealing with variable height tables
 			if(!this.fixedHeight && initialHeight != this.element.clientHeight){
 				resized = true;
-				if(this.subscribed("table-resize")){
-					this.dispatch("table-resize");
-				}else {
-					this.redraw();
+				if(!this.redrawing){ // prevent recursive redraws		
+					this.redrawing = true;
+					if(this.subscribed("table-resize")){
+						this.dispatch("table-resize");
+					}else {
+						this.redraw();
+					}
+					this.redrawing = false;
 				}
 			}
 			
@@ -29006,6 +29134,7 @@ class Tabulator extends ModuleBinder{
 		//clear DOM
 		while(element.firstChild) element.removeChild(element.firstChild);
 		element.classList.remove("tabulator");
+		element.removeAttribute("tabulator-layout");
 
 		this.externalEvents.dispatch("tableDestroyed");
 	}
