@@ -12935,58 +12935,34 @@ class GroupRows extends Module{
 
 var defaultUndoers = {
 	columnAdd: function(action){
-		// Check for previous columnDelete with same field (title change)
-		const history = this.history;
-		const idx = this.index;
-		if (idx > 0) {
-			const prev = history[idx - 1];
-			if (prev && prev.type === "columnDelete" && prev.data.field === action.data.definition.field) {
-				// Undo title change: revert to previous title
-				const col = action.component.table.columnManager.getColumnByField(action.data.definition.field);
-				if (col) {
-					col.definition.title = prev.data.definition.title;
-					col._initialize();
-				}
-				return;
-			}
-		}
-		// Otherwise, undo column add by removing the column
 		if(action.component && action.component.table && action.data.definition){
 			action.component.table.columnManager.deleteColumn(action.data.definition.field);
 		}
 	},
 
 	columnDelete: function(action){
-		// Check for next columnAdd with same field (title change)
-		const history = this.history;
-		const idx = this.index;
-		if (idx < history.length - 1) {
-			const next = history[idx + 1];
-			if (next && next.type === "columnAdd" && next.data.definition.field === action.data.field) {
-				// Undo title change: revert to previous title
-				const col = action.component.table.columnManager.getColumnByField(action.data.field);
-				if (col) {
-					col.definition.title = action.data.definition.title;
-					col._initialize();
-				}
-				return;
-			}
-		}
-		// Otherwise, undo column delete by re-adding the column
 		if(action.component && action.component.table && action.data.definition){
 			action.component.table.columnManager.addColumn(action.data.definition);
 		}
 	},
 
 	columnMove: function(action){
-		// Undo column move by moving back to original position
 		if(action.component && action.component.table){
 			action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, !action.data.after);
 		}
 	},
+	
 	cellEdit: function(action){
 		action.component.setValueProcessData(action.data.oldValue);
 		action.component.cellRendered();
+	},
+
+	columnTitleEdit: function(action){
+		// Update the definition directly
+		action.component.definition.title = action.data.oldTitle;
+		
+		// Trigger a re-initialization to update the display
+		action.component._initialize();
 	},
 
 	rowAdd: function(action){
@@ -13019,58 +12995,34 @@ var defaultUndoers = {
 
 var defaultRedoers = {
 	columnAdd: function(action){
-		// Check for previous columnDelete with same field (title change)
-		const history = this.history;
-		const idx = this.index;
-		if (idx > 0) {
-			const prev = history[idx - 1];
-			if (prev && prev.type === "columnDelete" && prev.data.field === action.data.definition.field) {
-				// Redo title change: set to new title
-				const col = action.component.table.columnManager.getColumnByField(action.data.definition.field);
-				if (col) {
-					col.definition.title = action.data.definition.title;
-					col._initialize();
-				}
-				return;
-			}
-		}
-		// Otherwise, redo column add by adding the column again
 		if(action.component && action.component.table && action.data.definition){
 			action.component.table.columnManager.addColumn(action.data.definition);
 		}
 	},
 
 	columnDelete: function(action){
-		// Check for next columnAdd with same field (title change)
-		const history = this.history;
-		const idx = this.index;
-		if (idx < history.length - 1) {
-			const next = history[idx + 1];
-			if (next && next.type === "columnAdd" && next.data.definition.field === action.data.field) {
-				// Redo title change: set to new title
-				const col = action.component.table.columnManager.getColumnByField(action.data.field);
-				if (col) {
-					col.definition.title = next.data.definition.title;
-					col._initialize();
-				}
-				return;
-			}
-		}
-		// Otherwise, redo column delete by removing the column again
 		if(action.component && action.component.table && action.data.definition){
 			action.component.table.columnManager.deleteColumn(action.data.definition.field);
 		}
 	},
 
 	columnMove: function(action){
-		// Redo column move by moving to new position
 		if(action.component && action.component.table){
 			action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, action.data.after);
 		}
 	},
+	
 	cellEdit: function(action){
 		action.component.setValueProcessData(action.data.newValue);
 		action.component.cellRendered();
+	},
+
+	columnTitleEdit: function(action){
+		// Update the definition directly
+		action.component.definition.title = action.data.newTitle;
+		
+		// Trigger a re-initialization to update the display
+		action.component._initialize();
 	},
 
 	rowAdd: function(action){
@@ -13168,6 +13120,7 @@ class History extends Module{
 			this.subscribe("column-add", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
 			this.subscribe("column-move", this.columnMoved.bind(this));
+			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 
 		this.registerTableFunction("undo", this.undo.bind(this));
@@ -13195,6 +13148,10 @@ class History extends Module{
 			to: to,
 			after: after
 		});
+	}
+
+	columnTitleChanged(column, newTitle, oldTitle) {
+		this.action("columnTitleEdit", column, {oldTitle: oldTitle, newTitle: newTitle});
 	}
 
 	rowMoved(from, to, after){
@@ -13229,6 +13186,13 @@ class History extends Module{
 
 	cellUpdated(cell){
 		this.action("cellEdit", cell, {oldValue:cell.oldValue, newValue:cell.value});
+	}
+
+	pop() {
+		if(this.history.length > 0){
+			this.history.pop();
+			this.index = this.history.length - 1;
+		}
 	}
 
 	clear(){
@@ -29618,7 +29582,24 @@ class Tabulator extends ModuleBinder{
 		this.initGuard();
 		
 		if(column){
-			return column.updateDefinition(definition);
+			// Check if title is changing to handle history properly
+			var titleChanging = definition.title && definition.title !== column.definition.title;
+			var oldTitle = titleChanging ? column.definition.title : null;
+			var newTitle = titleChanging ? definition.title : null;
+			
+			return column.updateDefinition(definition)
+				.then(() => {
+					if(this.modExists("history")){
+						// Remove add+delete histoy entries
+						this.modules.history.pop();
+						this.modules.history.pop();
+						
+						// If title changed, add a title edit history entry
+						if(titleChanging){
+							this.dispatch("column-title-changed", newTitle, oldTitle);
+						}
+					}
+				});
 		}else {
 			console.warn("Column Update Error - No matching column found:", field);
 			return Promise.reject();
