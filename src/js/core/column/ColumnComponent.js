@@ -131,6 +131,10 @@ export default class ColumnComponent {
 		return this._column.updateDefinition(updates);
 	}
 
+	dispatchTitleChanged(oldTitle) {
+		this._column.dispatchTitleChanged(oldTitle);
+	}
+
 	getWidth(){
 		return this._column.getWidth();
 	}

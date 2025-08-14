@@ -362,6 +362,10 @@ export default class Column extends CoreFeature{
 		
 		return output;
 	}
+
+	dispatchTitleChanged(oldTitle) {
+		this.dispatch("column-title-changed", this, oldTitle);
+	}
 	
 	//flat field set
 	_setFlatData(data, value){

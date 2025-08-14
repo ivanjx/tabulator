@@ -65,7 +65,8 @@ export default class History extends Module{
 		});
 	}
 
-	columnTitleChanged(column, newTitle, oldTitle) {
+	columnTitleChanged(column, oldTitle) {
+		var newTitle = column.definition.title;
 		this.action("columnTitleEdit", column, {oldTitle: oldTitle, newTitle: newTitle});
 	}
 
