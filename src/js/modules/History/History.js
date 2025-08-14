@@ -42,7 +42,6 @@ export default class History extends Module{
 		this.registerTableFunction("getHistoryUndoSize", this.getHistoryUndoSize.bind(this));
 		this.registerTableFunction("getHistoryRedoSize", this.getHistoryRedoSize.bind(this));
 		this.registerTableFunction("clearHistory", this.clear.bind(this));
-		this.registerTableFunction("popHistory", this.pop.bind(this));
 	}
 
 	columnAdded(definition, before, nextToColumn) {

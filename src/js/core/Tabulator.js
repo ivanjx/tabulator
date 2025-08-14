@@ -802,7 +802,13 @@ class Tabulator extends ModuleBinder{
 		this.initGuard();
 		
 		if(column){
-			return column.updateDefinition(definition);
+			return column.updateDefinition(definition)
+				.then(() => {
+					if(this.modExists("history")){
+						this.modules.history.pop();
+						this.modules.history.pop();
+					}
+				});
 		}else{
 			console.warn("Column Update Error - No matching column found:", field);
 			return Promise.reject();
