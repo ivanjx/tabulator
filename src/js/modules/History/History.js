@@ -1,6 +1,7 @@
 import Module from '../../core/Module.js';
 import Row from '../../core/row/Row.js';
 import Cell from '../../core/cell/Cell.js';
+import Column from '../../core/column/Column.js';
 
 import defaultUndoers from './defaults/undoers.js';
 import defaultRedoers from './defaults/redoers.js';
@@ -32,9 +33,9 @@ export default class History extends Module{
 			this.subscribe("rows-wipe", this.clear.bind(this));
 			this.subscribe("row-added", this.rowAdded.bind(this));
 			this.subscribe("row-move", this.rowMoved.bind(this));
-			this.subscribe("column-add", this.columnAdded.bind(this));
+			this.subscribe("column-add2", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
-			this.subscribe("column-move", this.columnMoved.bind(this));
+			this.subscribe("column-moved", this.columnMoved.bind(this));
 			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 
@@ -45,8 +46,8 @@ export default class History extends Module{
 		this.registerTableFunction("clearHistory", this.clear.bind(this));
 	}
 
-	columnAdded(definition, before, nextToColumn) {
-		this.action("columnAdd", definition, {definition, before, nextToColumn});
+	columnAdded(column, before, nextToColumn) {
+		this.action("columnAdd", column, {definition: column.definition, before, nextToColumn});
 	}
 
 	columnDeleted(column) {
@@ -201,6 +202,17 @@ export default class History extends Module{
 						action.component = newRow.getCell(field);
 					}
 
+				}
+			}
+		});
+	}
+
+	// Rebinds the action.component to the new column instance after column add/undo/redo
+	_rebindColumn(oldColumn, newColumn) {
+		this.history.forEach(function(action) {
+			if (action.component instanceof Column) {
+				if (action.component === oldColumn) {
+					action.component = newColumn;
 				}
 			}
 		});

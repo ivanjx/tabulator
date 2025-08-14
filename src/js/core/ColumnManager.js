@@ -702,6 +702,7 @@ export default class ColumnManager extends CoreFeature {
 			this._reIndexColumns();
 			
 			this.dispatch("column-add", definition, before, nextToColumn);
+			this.dispatch("column-add2", column, before, nextToColumn);
 			
 			if(this.layoutMode() != "fitColumns"){
 				column.reinitializeWidth();

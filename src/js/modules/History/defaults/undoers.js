@@ -1,33 +1,33 @@
 export default {
 	columnAdd: function(action){
-		if(action.component && action.component.table && action.data.definition){
-			action.component.table.columnManager.deleteColumn(action.data.definition.field);
-		}
+		action.component.delete(true);
 	},
 
 	columnDelete: function(action){
-		if(action.component && action.component.table && action.data.definition){
-			action.component.table.columnManager.addColumn(action.data.definition);
-		}
+		const newColumn = this.table.columnManager._addColumn(
+			action.data.definition,
+			action.data.before,
+			action.data.nextToColumn
+		);
+		this.table.columnManager._reIndexColumns();
+		this.table.columnManager.redraw(true);
+		this.table.rowManager.reinitialize();
+		this.table.columnManager.rerenderColumns();
+		this._rebindColumn(action.component, newColumn);
 	},
 
 	columnMove: function(action){
-		if(action.component && action.component.table){
-			action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, !action.data.after);
-		}
+		
+	},
+
+	columnTitleEdit: function(action){
+		action.component.definition.title = action.data.oldTitle;
+		action.component._initialize();
 	},
 	
 	cellEdit: function(action){
 		action.component.setValueProcessData(action.data.oldValue);
 		action.component.cellRendered();
-	},
-
-	columnTitleEdit: function(action){
-		// Update the definition directly
-		action.component.definition.title = action.data.oldTitle;
-		
-		// Trigger a re-initialization to update the display
-		action.component._initialize();
 	},
 
 	rowAdd: function(action){

@@ -791,7 +791,7 @@ export default class Column extends CoreFeature{
 		});
 	}
 	
-	delete(){
+	delete(nodispatch){
 		return new Promise((resolve, reject) => {
 			if(this.isGroup){
 				this.columns.forEach(function(column){
@@ -799,7 +799,9 @@ export default class Column extends CoreFeature{
 				});
 			}
 			
-			this.dispatch("column-delete", this);
+			if (!nodispatch) {
+				this.dispatch("column-delete", this);
+			}
 			
 			var cellCount = this.cells.length;
 			
@@ -824,7 +826,9 @@ export default class Column extends CoreFeature{
 			
 			this.table.columnManager.rerenderColumns(true);
 			
-			this.dispatch("column-deleted", this);
+			if (!nodispatch) {
+				this.dispatch("column-deleted", this);
+			}
 			
 			resolve();
 		});
