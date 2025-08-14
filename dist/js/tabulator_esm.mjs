@@ -2027,6 +2027,10 @@ class ColumnComponent {
 		return this._column.updateDefinition(updates);
 	}
 
+	dispatchTitleChanged(oldTitle) {
+		this._column.dispatchTitleChanged(oldTitle);
+	}
+
 	getWidth(){
 		return this._column.getWidth();
 	}
@@ -2422,6 +2426,10 @@ class Column extends CoreFeature{
 		}
 		
 		return output;
+	}
+
+	dispatchTitleChanged(oldTitle) {
+		this.dispatch("column-title-changed", this, oldTitle);
 	}
 	
 	//flat field set
@@ -13150,7 +13158,8 @@ class History extends Module{
 		});
 	}
 
-	columnTitleChanged(column, newTitle, oldTitle) {
+	columnTitleChanged(column, oldTitle) {
+		var newTitle = column.definition.title;
 		this.action("columnTitleEdit", column, {oldTitle: oldTitle, newTitle: newTitle});
 	}
 
@@ -29585,7 +29594,6 @@ class Tabulator extends ModuleBinder{
 			// Check if title is changing to handle history properly
 			var titleChanging = definition.title && definition.title !== column.definition.title;
 			var oldTitle = titleChanging ? column.definition.title : null;
-			var newTitle = titleChanging ? definition.title : null;
 			
 			return column.updateDefinition(definition)
 				.then(() => {
@@ -29594,9 +29602,9 @@ class Tabulator extends ModuleBinder{
 						this.modules.history.pop();
 						this.modules.history.pop();
 						
-						// If title changed, add a title edit history entry
 						if(titleChanging){
-							this.dispatch("column-title-changed", newTitle, oldTitle);
+							// Dispatch title changed event
+							column._dispatchTitleChanged(oldTitle);
 						}
 					}
 				});
