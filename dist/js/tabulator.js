@@ -1551,7 +1551,7 @@
 			});
 		}
 		
-		delete(){
+		delete(nodispatch){
 			return new Promise((resolve, reject) => {
 				if(this.isGroup){
 					this.columns.forEach(function(column){
@@ -1559,7 +1559,9 @@
 					});
 				}
 				
-				this.dispatch("column-delete", this);
+				if (!nodispatch) {
+					this.dispatch("column-delete", this);
+				}
 				
 				var cellCount = this.cells.length;
 				
@@ -1584,7 +1586,9 @@
 				
 				this.table.columnManager.rerenderColumns(true);
 				
-				this.dispatch("column-deleted", this);
+				if (!nodispatch) {
+					this.dispatch("column-deleted", this);
+				}
 				
 				resolve();
 			});
@@ -3361,6 +3365,7 @@
 				this._reIndexColumns();
 				
 				this.dispatch("column-add", definition, before, nextToColumn);
+				this.dispatch("column-add2", column, before, nextToColumn);
 				
 				if(this.layoutMode() != "fitColumns"){
 					column.reinitializeWidth();
@@ -19276,34 +19281,34 @@
 
 	var defaultUndoers = {
 		columnAdd: function(action){
-			if(action.component && action.component.table && action.data.definition){
-				action.component.table.columnManager.deleteColumn(action.data.definition.field);
-			}
+			action.component.delete(true);
 		},
 
 		columnDelete: function(action){
-			if(action.component && action.component.table && action.data.definition){
-				action.component.table.columnManager.addColumn(action.data.definition);
-			}
+			const newColumn = this.table.columnManager._addColumn(
+				action.data.definition,
+				action.data.before,
+				action.data.nextToColumn
+			);
+			this.table.columnManager._reIndexColumns();
+			this.table.columnManager.redraw(true);
+			this.table.rowManager.reinitialize();
+			this.table.columnManager.rerenderColumns();
+			this._rebindColumn(action.component, newColumn);
 		},
 
 		columnMove: function(action){
-			if(action.component && action.component.table){
-				action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, !action.data.after);
-			}
+			
+		},
+
+		columnTitleEdit: function(action){
+			action.component.definition.title = action.data.oldTitle;
+			action.component._initialize();
 		},
 		
 		cellEdit: function(action){
 			action.component.setValueProcessData(action.data.oldValue);
 			action.component.cellRendered();
-		},
-
-		columnTitleEdit: function(action){
-			// Update the definition directly
-			action.component.definition.title = action.data.oldTitle;
-			
-			// Trigger a re-initialization to update the display
-			action.component._initialize();
 		},
 
 		rowAdd: function(action){
@@ -19336,34 +19341,34 @@
 
 	var defaultRedoers = {
 		columnAdd: function(action){
-			if(action.component && action.component.table && action.data.definition){
-				action.component.table.columnManager.addColumn(action.data.definition);
-			}
+			const newColumn = this.table.columnManager._addColumn(
+				action.data.definition,
+				action.data.before,
+				action.data.nextToColumn
+			);
+			this.table.columnManager._reIndexColumns();
+			this.table.columnManager.redraw(true);
+			this.table.rowManager.reinitialize();
+			this.table.columnManager.rerenderColumns();
+			this._rebindColumn(action.component, newColumn);
 		},
 
 		columnDelete: function(action){
-			if(action.component && action.component.table && action.data.definition){
-				action.component.table.columnManager.deleteColumn(action.data.definition.field);
-			}
+			action.component.delete(true);
 		},
 
 		columnMove: function(action){
-			if(action.component && action.component.table){
-				action.component.table.columnManager.moveColumnActual(action.data.from, action.data.to, action.data.after);
-			}
+			
+		},
+
+		columnTitleEdit: function(action){
+			action.component.definition.title = action.data.newTitle;
+			action.component._initialize();
 		},
 		
 		cellEdit: function(action){
 			action.component.setValueProcessData(action.data.newValue);
 			action.component.cellRendered();
-		},
-
-		columnTitleEdit: function(action){
-			// Update the definition directly
-			action.component.definition.title = action.data.newTitle;
-			
-			// Trigger a re-initialization to update the display
-			action.component._initialize();
 		},
 
 		rowAdd: function(action){
@@ -19458,9 +19463,9 @@
 				this.subscribe("rows-wipe", this.clear.bind(this));
 				this.subscribe("row-added", this.rowAdded.bind(this));
 				this.subscribe("row-move", this.rowMoved.bind(this));
-				this.subscribe("column-add", this.columnAdded.bind(this));
+				this.subscribe("column-add2", this.columnAdded.bind(this));
 				this.subscribe("column-delete", this.columnDeleted.bind(this));
-				this.subscribe("column-move", this.columnMoved.bind(this));
+				this.subscribe("column-moved", this.columnMoved.bind(this));
 				this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 			}
 
@@ -19471,8 +19476,8 @@
 			this.registerTableFunction("clearHistory", this.clear.bind(this));
 		}
 
-		columnAdded(definition, before, nextToColumn) {
-			this.action("columnAdd", definition, {definition, before, nextToColumn});
+		columnAdded(column, before, nextToColumn) {
+			this.action("columnAdd", column, {definition: column.definition, before, nextToColumn});
 		}
 
 		columnDeleted(column) {
@@ -19627,6 +19632,17 @@
 							action.component = newRow.getCell(field);
 						}
 
+					}
+				}
+			});
+		}
+
+		// Rebinds the action.component to the new column instance after column add/undo/redo
+		_rebindColumn(oldColumn, newColumn) {
+			this.history.forEach(function(action) {
+				if (action.component instanceof Column) {
+					if (action.component === oldColumn) {
+						action.component = newColumn;
 					}
 				}
 			});
