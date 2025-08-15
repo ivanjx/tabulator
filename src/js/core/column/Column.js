@@ -269,7 +269,12 @@ export default class Column extends CoreFeature{
 			});
 			
 			titleElement.addEventListener("change", () => {
+				const oldTitle = def.title;
+				const titleChanged = oldTitle !== titleElement.value;
 				def.title = titleElement.value;
+				if (titleChanged) {
+					this.dispatch("column-title-changed", this, oldTitle);
+				}
 				this.dispatchExternal("columnTitleChanged", this.getComponent());
 			});
 			
@@ -361,10 +366,6 @@ export default class Column extends CoreFeature{
 		}
 		
 		return output;
-	}
-
-	dispatchTitleChanged(oldTitle) {
-		this.dispatch("column-title-changed", this, oldTitle);
 	}
 	
 	//flat field set

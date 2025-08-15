@@ -28,8 +28,11 @@ export default {
 	},
 
 	columnTitleEdit: function(action){
-		action.component.definition.title = action.data.newTitle;
-		action.component._initialize();
+		const column = this.table.columnManager.getColumnByField(action.data.field);
+		column.definition.title = action.data.newTitle;
+		while(column.element.firstChild) column.element.removeChild(column.element.firstChild);
+		column.contentElement = column._buildColumnHeaderContent();
+		column.element.appendChild(column.contentElement);
 	},
 	
 	cellEdit: function(action){

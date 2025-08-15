@@ -69,7 +69,7 @@ export default class History extends Module{
 
 	columnTitleChanged(column, oldTitle) {
 		var newTitle = column.definition.title;
-		this.action("columnTitleEdit", column, {oldTitle: oldTitle, newTitle: newTitle});
+		this.action("columnTitleEdit", column, {field: column.definition.field, oldTitle: oldTitle, newTitle: newTitle});
 	}
 
 	rowMoved(from, to, after){

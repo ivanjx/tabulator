@@ -802,21 +802,12 @@ class Tabulator extends ModuleBinder{
 		this.initGuard();
 		
 		if(column){
-			// Check if title is changing to handle history properly
-			var titleChanging = definition.title && definition.title !== column.definition.title;
-			var oldTitle = titleChanging ? column.definition.title : null;
-			
 			return column.updateDefinition(definition)
 				.then(() => {
 					if(this.modExists("history")){
 						// Remove add+delete histoy entries
 						this.modules.history.pop();
 						this.modules.history.pop();
-						
-						if(titleChanging){
-							// Dispatch title changed event
-							column._dispatchTitleChanged(oldTitle);
-						}
 					}
 				});
 		}else{
