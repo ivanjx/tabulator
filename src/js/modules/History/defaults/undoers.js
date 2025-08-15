@@ -17,11 +17,16 @@ export default {
 	},
 
 	columnMove: function(action){
-		const to = this.table.columnManager.getColumnByIndex(action.data.fromIndex);
+		let to = this.table.columnManager.getColumnByIndex(action.data.fromIndex);
+		let after = false;
+		if (!to) {
+			to = this.table.columnManager.getColumns().slice(-1)[0];
+			after = true;
+		}
 		this.table.columnManager.moveColumnSilent(
 			action.component,
 			to,
-			action.data.fromAfter
+			after
 		);
 		const newColumn = this.table.columnManager.getColumnByField(action.component.definition.field);
 		this._rebindColumn(action.component, newColumn);

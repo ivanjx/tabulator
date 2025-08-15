@@ -35,7 +35,7 @@ export default class History extends Module{
 			this.subscribe("row-move", this.rowMoved.bind(this));
 			this.subscribe("column-add2", this.columnAdded.bind(this));
 			this.subscribe("column-delete", this.columnDeleted.bind(this));
-			// this.subscribe("column-move", this.columnMoved.bind(this));
+			this.subscribe("column-move", this.columnMove.bind(this));
 			this.subscribe("column-title-changed", this.columnTitleChanged.bind(this));
 		}
 
@@ -56,14 +56,21 @@ export default class History extends Module{
 		this.action("columnDelete", column, {definition, field});
 	}
 
-	columnMoved(from, to) {
-		const isFromLast = !from.nextColumn();
-		const isToFirst = !to.prevColumn();
+	columnMove(from, to) {
+		let fromIdx = this.table.columnManager.findColumnIndex(from);
+		let toIdx = this.table.columnManager.findColumnIndex(to);
+
+		if (toIdx > fromIdx) {
+			toIdx++;
+		}
+
+		if (toIdx < fromIdx) {
+			fromIdx++;
+		}
+
 		this.action("columnMove", from, {
-			fromIndex: this.table.columnManager.findColumnIndex(from),
-			toIndex: this.table.columnManager.findColumnIndex(to),
-			fromAfter: isFromLast,
-			toAfter: isToFirst
+			fromIndex: fromIdx,
+			toIndex: toIdx
 		});
 	}
 
