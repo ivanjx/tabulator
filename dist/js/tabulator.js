@@ -345,10 +345,6 @@
 			return this._column.updateDefinition(updates);
 		}
 
-		dispatchTitleChanged(oldTitle) {
-			this._column.dispatchTitleChanged(oldTitle);
-		}
-
 		getWidth(){
 			return this._column.getWidth();
 		}
@@ -1029,7 +1025,12 @@
 				});
 				
 				titleElement.addEventListener("change", () => {
+					const oldTitle = def.title;
+					const titleChanged = oldTitle !== titleElement.value;
 					def.title = titleElement.value;
+					if (titleChanged) {
+						this.dispatch("column-title-changed", this, oldTitle);
+					}
 					this.dispatchExternal("columnTitleChanged", this.getComponent());
 				});
 				
@@ -1121,10 +1122,6 @@
 			}
 			
 			return output;
-		}
-
-		dispatchTitleChanged(oldTitle) {
-			this.dispatch("column-title-changed", this, oldTitle);
 		}
 		
 		//flat field set
@@ -8981,21 +8978,12 @@
 			this.initGuard();
 			
 			if(column){
-				// Check if title is changing to handle history properly
-				var titleChanging = definition.title && definition.title !== column.definition.title;
-				var oldTitle = titleChanging ? column.definition.title : null;
-				
 				return column.updateDefinition(definition)
 					.then(() => {
 						if(this.modExists("history")){
 							// Remove add+delete histoy entries
 							this.modules.history.pop();
 							this.modules.history.pop();
-							
-							if(titleChanging){
-								// Dispatch title changed event
-								column._dispatchTitleChanged(oldTitle);
-							}
 						}
 					});
 			}else {
@@ -19329,8 +19317,11 @@
 		},
 
 		columnTitleEdit: function(action){
-			action.component.definition.title = action.data.oldTitle;
-			action.component._initialize();
+			const column = this.table.columnManager.getColumnByField(action.data.field);
+			column.definition.title = action.data.oldTitle;
+			while(column.element.firstChild) column.element.removeChild(column.element.firstChild);
+			column.contentElement = column._buildColumnHeaderContent();
+			column.element.appendChild(column.contentElement);
 		},
 		
 		cellEdit: function(action){
@@ -19396,8 +19387,11 @@
 		},
 
 		columnTitleEdit: function(action){
-			action.component.definition.title = action.data.newTitle;
-			action.component._initialize();
+			const column = this.table.columnManager.getColumnByField(action.data.field);
+			column.definition.title = action.data.newTitle;
+			while(column.element.firstChild) column.element.removeChild(column.element.firstChild);
+			column.contentElement = column._buildColumnHeaderContent();
+			column.element.appendChild(column.contentElement);
 		},
 		
 		cellEdit: function(action){
@@ -19533,7 +19527,7 @@
 
 		columnTitleChanged(column, oldTitle) {
 			var newTitle = column.definition.title;
-			this.action("columnTitleEdit", column, {oldTitle: oldTitle, newTitle: newTitle});
+			this.action("columnTitleEdit", column, {field: column.definition.field, oldTitle: oldTitle, newTitle: newTitle});
 		}
 
 		rowMoved(from, to, after){
