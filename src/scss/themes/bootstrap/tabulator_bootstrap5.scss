@@ -51,7 +51,6 @@ $table-cell-padding-sm: 5px;
 		color:$headerForegroundColor;
 
 		.tabulator-col{
-			border-right:none;
 			background-color: $headerBackgroundColor;
 
 			.tabulator-col-content{
@@ -66,6 +65,10 @@ $table-cell-padding-sm: 5px;
 				.tabulator-col-group-cols{
 					border-top:1px solid $borderColor;
 				}
+			}
+
+			&.tabulator-row-header{
+				border-left:1px solid $borderColor;
 			}
 
 			.tabulator-header-filter{
@@ -584,14 +587,10 @@ $table-cell-padding-sm: 5px;
 
 	.tabulator-cell{
 		padding:$cellPadding;
-		border-right:none;
-
-		&:last-of-type{
-			border-right: none;
-		}
 
 		&.tabulator-row-header{
 			border-right:1px solid $borderColor;
+			border-left:1px solid $borderColor;
 			border-bottom:none;
 			background:$headerBackgroundColor;
 		}
