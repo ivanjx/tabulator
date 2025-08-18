@@ -157,6 +157,19 @@ $rangeHeaderTextHighlightBackground: #000000 !default; //header text color when 
 				color: $rangeHeaderSelectedTextColor;
 			}
 			
+			&.tabulator-editing{
+				outline:none;
+				
+				padding: 0;
+				
+				input, select{
+					border:none !important;
+					background:transparent !important;
+					background-color:transparent !important;
+					outline:none;
+				}
+			}
+			
 			//hold content of column header
 			.tabulator-col-content{
 				box-sizing:border-box;

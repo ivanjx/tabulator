@@ -434,6 +434,19 @@
   color: #FFFFFF;
 }
 
+.tabulator .tabulator-header .tabulator-col.tabulator-editing {
+  outline: none;
+  padding: 0;
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-editing input,
+.tabulator .tabulator-header .tabulator-col.tabulator-editing select {
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: none;
+}
+
 .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
   box-sizing: border-box;
   position: relative;

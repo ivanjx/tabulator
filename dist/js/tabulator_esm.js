@@ -2308,27 +2308,33 @@ class Column extends CoreFeature{
 	//build title element of column
 	_buildColumnHeaderTitle(){
 		var def = this.definition;
-		
+		var element = this.getElement();
+        
 		var titleHolderElement = document.createElement("div");
 		titleHolderElement.classList.add("tabulator-col-title");
-		
+        
 		if(def.headerWordWrap){
 			titleHolderElement.classList.add("tabulator-col-title-wrap");
 		}
-		
+        
 		if(def.editableTitle){
+			element.classList.add("tabulator-editing");
 			var titleElement = document.createElement("input");
 			titleElement.classList.add("tabulator-title-editor");
-			
+            
 			titleElement.addEventListener("click", (e) => {
 				e.stopPropagation();
 				titleElement.focus();
 			});
-			
+            
 			titleElement.addEventListener("mousedown", (e) => {
 				e.stopPropagation();
 			});
-			
+            
+			titleElement.addEventListener("blur", () => {
+				element.classList.remove("tabulator-editing");
+			});
+            
 			titleElement.addEventListener("change", () => {
 				const oldTitle = def.title;
 				const titleChanged = oldTitle !== titleElement.value;
@@ -2338,9 +2344,9 @@ class Column extends CoreFeature{
 				}
 				this.dispatchExternal("columnTitleChanged", this.getComponent());
 			});
-			
+            
 			titleHolderElement.appendChild(titleElement);
-			
+            
 			if(def.field){
 				this.langBind("columns|" + def.field, (text) => {
 					titleElement.value = text || (def.title || "&nbsp;");
@@ -2348,7 +2354,7 @@ class Column extends CoreFeature{
 			}else {
 				titleElement.value  = def.title || "&nbsp;";
 			}
-			
+            
 		}else {
 			if(def.field){
 				this.langBind("columns|" + def.field, (text) => {
@@ -2358,7 +2364,7 @@ class Column extends CoreFeature{
 				this._formatColumnHeaderTitle(titleHolderElement, def.title || "&nbsp;");
 			}
 		}
-		
+        
 		return titleHolderElement;
 	}
 	
