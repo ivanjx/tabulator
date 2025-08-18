@@ -67,10 +67,6 @@ $table-cell-padding-sm: 5px;
 				}
 			}
 
-			&.tabulator-row-header{
-				border-left:1px solid $borderColor;
-			}
-
 			.tabulator-header-filter{
 				input{
 					padding: .375rem .75rem;
@@ -588,9 +584,12 @@ $table-cell-padding-sm: 5px;
 	.tabulator-cell{
 		padding:$cellPadding;
 
+		&:last-of-type{
+			border-right: none;
+		}
+
 		&.tabulator-row-header{
 			border-right:1px solid $borderColor;
-			border-left:1px solid $borderColor;
 			border-bottom:none;
 			background:$headerBackgroundColor;
 		}
