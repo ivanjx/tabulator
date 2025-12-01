@@ -1,3 +1,23 @@
+// Import Bulma utilities
+@import "~bulma/sass/utilities/functions";
+
+// Functions (using Bulma's implementations)
+@function colorLuminance($color) {
+  @return bulmaColorLuminance($color);
+}
+
+@function findColorInvert($color) {
+  @return bulmaFindColorInvert($color);
+}
+
+@function mergeColorMaps($map1, $map2) {
+  @if $map2 {
+    @return map-merge($map1, $map2);
+  } @else {
+    @return $map1;
+  }
+}
+
 ////////// from utilities/initial-variables.sass //////////
 $black:        hsl(0, 0%, 4%) !default;
 $black-bis:    hsl(0, 0%, 7%) !default;
